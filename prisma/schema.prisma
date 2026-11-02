@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Enum untuk memvalidasi status tagihan dengan ketat
+enum StatusTagihan {
+  UNPAID
+  PAID
+}
+
+model Siswa {
+  id           String    @id @default(uuid())
+  nama         String
+  nomor_wa     String    // Format standar: 628xxxxxxxxxx
+  status_aktif Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // Relasi One-to-Many ke tabel Tagihan
+  tagihan      Tagihan[]
+}
+
+model Tagihan {
+  id_tagihan  String        @id // Format dinamis dari Next.js: INV-YYYYMM-[ID_SISWA]
+  nominal     Int
+  bulan_tahun String        // Format: YYYY-MM
+  status      StatusTagihan @default(UNPAID)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Foreign key dan Relasi ke tabel Siswa
+  id_siswa    String
+  siswa       Siswa         @relation(fields: [id_siswa], references: [id], onDelete: Cascade)
+}
