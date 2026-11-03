@@ -1,5 +1,5 @@
-export const dynamic = 'force-dynamic';
-
+// src/app/admin/page.tsx
+import { connection } from 'next/server'; // <-- Import fungsi dynamic modern
 import { PrismaClient } from '@prisma/client';
 import Link from 'next/link';
 import TombolLogout from './TombolLogout';
@@ -7,6 +7,9 @@ import TombolLogout from './TombolLogout';
 const prisma = new PrismaClient();
 
 export default async function HalamanAdmin() {
+  // Memaksa Next.js agar halaman ini dirender secara dinamis saat runtime
+  await connection();
+
   const totalSiswa = await prisma.siswa.count();
   const totalTagihan = await prisma.tagihan.count();
   const tagihanLunas = await prisma.tagihan.count({ where: { status: 'PAID' } });
