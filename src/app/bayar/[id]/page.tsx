@@ -70,8 +70,10 @@ async function DetailTagihan({ id }: { id: string }) {
   );
 }
 
-export default async function HalamanPembayaran({ params }: { params: { id: string } }) {
-  const id = params.id;
+export default async function HalamanPembayaran({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
+
   return (
     <div className="min-h-screen bg-[#e8f0f7] flex flex-col items-center justify-center p-4">
       <Suspense fallback={<div className="text-slate-500 font-bold">Memuat rincian tagihan...</div>}>
