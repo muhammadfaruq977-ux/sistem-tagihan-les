@@ -6,7 +6,6 @@ import TombolLogout from './TombolLogout';
 // PERBAIKAN: Gunakan konfigurasi standar Next.js App Router untuk memaksa dynamic render
 // agar tidak dieksekusi saat prerender build statis di Vercel.
 export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
 
 /* ---------- Ikon (SVG inline, tanpa dependensi) ---------- */
 
