@@ -7,73 +7,68 @@ const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
-    // 1. Duitku mengirim callback dalam bentuk Form Data, bukan JSON
-    const formData = await request.formData();
-    
-    const merchantCode = formData.get('merchantCode') as string;
-    const amount = formData.get('amount') as string;
-    const merchantOrderId = formData.get('merchantOrderId') as string;
-    const signature = formData.get('signature') as string;
-    const reference = formData.get('reference') as string;
-    const resultCode = formData.get('resultCode') as string;
+    const contentType = request.headers.get('content-type') || '';
+    let body: any = {};
 
-    // 2. Verifikasi Keamanan (Cegah Hacker memalsukan pembayaran)
-    // Rumus Signature Callback Duitku: MD5(merchantCode + amount + merchantOrderId + merchantKey)
-    const merchantKey = process.env.DUITKU_MERCHANT_KEY!;
-    const signatureString = `${merchantCode}${amount}${merchantOrderId}${merchantKey}`;
-    const calculatedSignature = crypto.createHash('md5').update(signatureString).digest('hex');
-
-    if (calculatedSignature !== signature) {
-      console.error("Signature tidak valid!");
-      return NextResponse.json({ error: 'Bad Signature' }, { status: 403 });
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const formData = await request.formData();
+      body = Object.fromEntries(formData.entries());
+    } else {
+      body = await request.json();
     }
 
-    // 3. Cek apakah pembayaran Sukses (resultCode '00' artinya Sukses)
+    console.log(">>> PAYLOAD WEBHOOK MASUK:", JSON.stringify(body));
+
+    const merchantCode = body.merchantCode || body.merchantcode;
+    const amount = body.amount;
+    const merchantOrderId = body.merchantOrderId || body.merchantorderid;
+    const resultCode = body.resultCode || body.resultcode;
+    const incomingSignature = body.signature;
+
+    const merchantKey = process.env.DUITKU_MERCHANT_KEY!;
+
+    // 1. Kalkulasi HMAC SHA256 (Standar Baru)
+    const stringToSign = `${merchantCode}${amount}${merchantOrderId}`;
+    const hmacSignature = crypto
+      .createHmac('sha256', merchantKey)
+      .update(stringToSign)
+      .digest('hex');
+
+    // 2. Kalkulasi MD5 (Jaga-jaga Callback versi Sandbox Legacy)
+    const md5Signature = crypto
+      .createHash('md5')
+      .update(`${merchantCode}${amount}${merchantOrderId}${merchantKey}`)
+      .digest('hex');
+
+    console.log(">>> HASH CHECK:");
+    console.log("Diterima (Incoming) :", incomingSignature);
+    console.log("Hasil HMAC SHA256   :", hmacSignature);
+    console.log("Hasil MD5          :", md5Signature);
+
+    // Cek pencocokan signature
+    const isValidSignature = 
+      incomingSignature?.toLowerCase() === hmacSignature.toLowerCase() ||
+      incomingSignature?.toLowerCase() === md5Signature.toLowerCase();
+
+    if (!isValidSignature) {
+      console.error("Webhook Duitku Error: Signature Mismatch!");
+      return NextResponse.json({ error: 'Invalid Signature' }, { status: 400 });
+    }
+
+    // 3. Update status ke Supabase jika pembayaran sukses ("00")
     if (resultCode === '00') {
-      // 4. Update status tagihan di Supabase menjadi PAID
-      const tagihanUpdate = await prisma.tagihan.update({
+      await prisma.tagihan.update({
         where: { id_tagihan: merchantOrderId },
-        data: { status: 'PAID' },
-        include: { siswa: true } // Tarik sekalian data siswanya untuk kirim WA
+        data: { status: 'PAID' }
       });
 
-      // 5. Kirim Resi Sukses via WhatsApp ke Wali Murid
-      if (tagihanUpdate.siswa && tagihanUpdate.siswa.nomor_wa) {
-        await fetch(`https://graph.facebook.com/v21.0/${process.env.META_PHONE_ID}/messages`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.META_WA_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: tagihanUpdate.siswa.nomor_wa,
-            type: "template",
-            template: {
-              name: "pembayaran_berhasil", // Pastikan template ini sudah dibuat & diapprove Meta
-              language: { code: "id" },
-              components: [
-                {
-                  type: "body",
-                  parameters: [
-                    { type: "text", text: tagihanUpdate.siswa.nama },
-                    { type: "text", text: tagihanUpdate.bulan_tahun },
-                    { type: "text", text: reference } // Nomor referensi Duitku sebagai bukti
-                  ]
-                }
-              ]
-            }
-          })
-        });
-      }
+      console.log(`[SUCCESS] Tagihan ${merchantOrderId} berhasil di-update menjadi PAID di Supabase.`);
     }
 
-    // 6. WAJIB mengembalikan status 200 agar Duitku tahu webhook sudah kita terima
-    // Jika tidak membalas 200, Duitku akan mengirim ulang webhook berkali-kali
-    return NextResponse.json({ message: 'Callback Success' }, { status: 200 });
+    return NextResponse.json({ message: 'Callback processed successfully' }, { status: 200 });
 
   } catch (error) {
-    console.error("Error Webhook:", error);
+    console.error("Internal Webhook Error:", error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
