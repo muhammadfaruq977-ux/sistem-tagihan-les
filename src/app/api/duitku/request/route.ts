@@ -7,39 +7,58 @@ const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { id_tagihan } = body;
+    // Mendukung request dari Form HTML langsung (x-www-form-urlencoded) maupun JSON
+    const contentType = request.headers.get('content-type') || '';
+    let id_tagihan = '';
 
+    if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      id_tagihan = formData.get('id_tagihan') as string;
+    } else {
+      const body = await request.json();
+      id_tagihan = body.id_tagihan;
+    }
+
+    if (!id_tagihan) {
+      return NextResponse.json({ error: 'ID Tagihan tidak ditemukan' }, { status: 400 });
+    }
+
+    // Cari data di database
     const tagihan = await prisma.tagihan.findUnique({
       where: { id_tagihan },
       include: { siswa: true }
     });
 
     if (!tagihan || tagihan.status === 'PAID') {
-      return NextResponse.json({ error: 'Tagihan tidak valid atau sudah dibayar' }, { status: 400 });
+      return NextResponse.json({ error: 'Tagihan tidak valid atau sudah lunas' }, { status: 400 });
     }
 
     const merchantCode = process.env.DUITKU_MERCHANT_CODE!;
     const merchantKey = process.env.DUITKU_MERCHANT_KEY!;
     const paymentAmount = tagihan.nominal; 
     
-    // 1. Buat Timestamp dalam milidetik (Sesuai dokumentasi kode 5.PNG)
+    // Otentikasi Header HMAC SHA256
     const timestamp = Date.now().toString();
-
-    // 2. Buat Signature HMAC SHA256 (Rumus baru: merchantCode + timestamp)
     const stringToSign = `${merchantCode}${timestamp}`;
     const signature = crypto.createHmac('sha256', merchantKey).update(stringToSign).digest('hex');
 
-    // 3. Susun Payload JSON (Tidak perlu memasukkan signature ke sini lagi)
+    // Susun Payload
     const payload = {
-      merchantCode: merchantCode, // Disertakan untuk jaga-jaga
-      paymentAmount: paymentAmount, // Harus integer sesuai kode 6.PNG
-      paymentMethod: "SP", 
+      merchantCode: merchantCode,
+      paymentAmount: paymentAmount,
+      paymentMethod: "SP", // Spesifik QRIS
       merchantOrderId: id_tagihan,
       productDetails: `SPP Bulan ${tagihan.bulan_tahun}`,
       email: "admin@kelastambahanintegral.web.id", 
       phoneNumber: tagihan.siswa.nomor_wa,
       customerVaName: tagihan.siswa.nama,
+      // Ini yang membuat nama siswa muncul di Duitku
+      customerDetail: {
+        firstName: tagihan.siswa.nama,
+        lastName: "",
+        email: "admin@kelastambahanintegral.web.id",
+        phoneNumber: tagihan.siswa.nomor_wa
+      },
       callbackUrl: `${process.env.BASE_URL}/api/duitku/webhook`, 
       returnUrl: `${process.env.BASE_URL}/bayar/${id_tagihan}`, 
       expiryPeriod: 1440
@@ -47,17 +66,15 @@ export async function POST(request: Request) {
 
     const bodyString = JSON.stringify(payload);
 
-    // 4. Tembak API Duitku dengan Header Otentikasi Baru
+    // Kirim ke Duitku
     const duitkuResponse = await fetch(process.env.DUITKU_API_URL!, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
         'Accept': 'application/json', 
-        // Header Wajib Duitku API Terbaru (Sesuai kode 5.PNG)
         'x-duitku-merchantcode': merchantCode,
         'x-duitku-timestamp': timestamp,
         'x-duitku-signature': signature,
-        // Header Bypass Vercel WAF
         'Content-Length': Buffer.byteLength(bodyString).toString(),
         'Origin': 'https://kelastambahanintegral.web.id',
         'Referer': 'https://kelastambahanintegral.web.id/'
@@ -72,9 +89,13 @@ export async function POST(request: Request) {
     }
 
     const duitkuData = await duitkuResponse.json();
-    console.log("RESPONS DUITKU:", duitkuData);
 
     if (duitkuData.statusCode === '00') {
+      // Karena kita akan menekan tombol dari tag HTML <form>, 
+      // API ini akan langsung me-redirect browser ke halaman QRIS Duitku
+      if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+        return NextResponse.redirect(duitkuData.paymentUrl, 303);
+      }
       return NextResponse.json({ paymentUrl: duitkuData.paymentUrl }); 
     } else {
       return NextResponse.json({ error: duitkuData.statusMessage }, { status: 400 });
