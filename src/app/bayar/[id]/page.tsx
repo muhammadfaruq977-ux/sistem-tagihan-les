@@ -6,8 +6,14 @@ import { connection } from 'next/server';
 
 const prisma = new PrismaClient();
 
-async function DetailTagihan({ id }: { id: string }) {
+// 1. Terima params sebagai Promise di dalam komponen yang dilindungi Suspense
+async function DetailTagihan({ paramsPromise }: { paramsPromise: Promise<{ id: string }> }) {
   await connection();
+  
+  // Lakukan await param di sini, BUKAN di komponen Page utama
+  const resolvedParams = await paramsPromise;
+  const id = resolvedParams.id;
+
   const tagihan = await prisma.tagihan.findUnique({
     where: { id_tagihan: id },
     include: { siswa: true }
@@ -70,14 +76,13 @@ async function DetailTagihan({ id }: { id: string }) {
   );
 }
 
-export default async function HalamanPembayaran({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = await params;
-  const id = resolvedParams.id;
-
+// 2. Komponen utama sekarang menjadi sinkron (tanpa async/await di level teratas)
+export default function HalamanPembayaran({ params }: { params: Promise<{ id: string }> }) {
   return (
     <div className="min-h-screen bg-[#e8f0f7] flex flex-col items-center justify-center p-4">
       <Suspense fallback={<div className="text-slate-500 font-bold">Memuat rincian tagihan...</div>}>
-        <DetailTagihan id={id} />
+        {/* Teruskan promise params utuh ke dalam komponen di bawah */}
+        <DetailTagihan paramsPromise={params} />
       </Suspense>
     </div>
   );
