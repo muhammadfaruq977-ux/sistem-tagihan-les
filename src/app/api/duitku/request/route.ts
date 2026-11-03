@@ -10,7 +10,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { id_tagihan } = body;
 
-    // 1. Ambil data tagihan & siswa dari Supabase via Prisma
     const tagihan = await prisma.tagihan.findUnique({
       where: { id_tagihan },
       include: { siswa: true }
@@ -24,50 +23,54 @@ export async function POST(request: Request) {
     const merchantKey = process.env.DUITKU_MERCHANT_KEY!;
     const paymentAmount = tagihan.nominal; 
     
-    // 2. Buat MD5 Signature sesuai standar Create Invoice Duitku Pop
-    const signatureString = `${merchantCode}${id_tagihan}${paymentAmount}${merchantKey}`;
-    const signature = crypto.createHash('md5').update(signatureString).digest('hex');
+    // 1. Buat Timestamp dalam milidetik (Sesuai dokumentasi kode 5.PNG)
+    const timestamp = Date.now().toString();
 
-    // 3. Susun data transaksi
+    // 2. Buat Signature HMAC SHA256 (Rumus baru: merchantCode + timestamp)
+    const stringToSign = `${merchantCode}${timestamp}`;
+    const signature = crypto.createHmac('sha256', merchantKey).update(stringToSign).digest('hex');
+
+    // 3. Susun Payload JSON (Tidak perlu memasukkan signature ke sini lagi)
     const payload = {
-      merchantCode: merchantCode,
-      paymentAmount: paymentAmount,
-      paymentMethod: "SP", // QRIS Dinamis
+      merchantCode: merchantCode, // Disertakan untuk jaga-jaga
+      paymentAmount: paymentAmount, // Harus integer sesuai kode 6.PNG
+      paymentMethod: "SP", 
       merchantOrderId: id_tagihan,
       productDetails: `SPP Bulan ${tagihan.bulan_tahun}`,
-      email: "admin@kelastambahan.web.id", 
+      email: "admin@kelastambahanintegral.web.id", 
       phoneNumber: tagihan.siswa.nomor_wa,
       customerVaName: tagihan.siswa.nama,
       callbackUrl: `${process.env.BASE_URL}/api/duitku/webhook`, 
       returnUrl: `${process.env.BASE_URL}/bayar/${id_tagihan}`, 
-      signature: signature,
       expiryPeriod: 1440
     };
 
     const bodyString = JSON.stringify(payload);
 
-    // 4. Kirim request ke Duitku Sandbox dengan Header Origin domain resmi
+    // 4. Tembak API Duitku dengan Header Otentikasi Baru
     const duitkuResponse = await fetch(process.env.DUITKU_API_URL!, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
         'Accept': 'application/json', 
-        'Origin': 'https://kelastambahan.web.id',
-        'Referer': 'https://kelastambahan.web.id/',
+        // Header Wajib Duitku API Terbaru (Sesuai kode 5.PNG)
+        'x-duitku-merchantcode': merchantCode,
+        'x-duitku-timestamp': timestamp,
+        'x-duitku-signature': signature,
+        // Header Bypass Vercel WAF
         'Content-Length': Buffer.byteLength(bodyString).toString(),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'Origin': 'https://kelastambahanintegral.web.id',
+        'Referer': 'https://kelastambahanintegral.web.id/'
       },
       body: bodyString
     });
 
-    // 5. Tangani respons gagal
     if (!duitkuResponse.ok) {
       const errorText = await duitkuResponse.text();
-      console.error("Duitku Penolakan Firewall:", errorText);
+      console.error("Duitku Error:", errorText);
       return NextResponse.json({ error: `Duitku menolak: ${errorText}` }, { status: 400 });
     }
 
-    // 6. Tangani respons sukses
     const duitkuData = await duitkuResponse.json();
     console.log("RESPONS DUITKU:", duitkuData);
 
