@@ -2,10 +2,10 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import TombolLogout from './TombolLogout';
+import { connection } from 'next/server'
 
 // PERBAIKAN: Gunakan konfigurasi standar Next.js App Router untuk memaksa dynamic render
 // agar tidak dieksekusi saat prerender build statis di Vercel.
-export const dynamic = 'force-dynamic';
 
 /* ---------- Ikon (SVG inline, tanpa dependensi) ---------- */
 
@@ -45,6 +45,8 @@ const menu = [
 /* ---------- Halaman ---------- */
 
 export default async function HalamanAdmin() {
+  // Memaksa render dinamis tanpa bentrok dengan cacheComponents
+  await connection();
   // Tiga query dijalankan paralel supaya halaman lebih cepat terbuka
   const [totalSiswa, totalTagihan, tagihanLunas] = await Promise.all([
     prisma.siswa.count(),
