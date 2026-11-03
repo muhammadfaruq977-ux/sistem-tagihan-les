@@ -1,12 +1,12 @@
 // src/app/admin/page.tsx
-import { connection } from 'next/server';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import TombolLogout from './TombolLogout';
 
-// PERBAIKAN UTAMA: paksa halaman dirender saat ada request, bukan saat build.
-// Tanpa ini Next.js mencoba query database ketika `next build` di Vercel,
-// dan gagal (database/env tidak tersedia di tahap build) -> "Error occurred prerendering page".
+// PERBAIKAN: Gunakan konfigurasi standar Next.js App Router untuk memaksa dynamic render
+// agar tidak dieksekusi saat prerender build statis di Vercel.
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 /* ---------- Ikon (SVG inline, tanpa dependensi) ---------- */
 
