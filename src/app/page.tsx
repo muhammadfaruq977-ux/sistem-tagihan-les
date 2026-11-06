@@ -1,30 +1,22 @@
+// src/app/page.tsx
 'use client';
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation'; // <-- PERBAIKAN: Impor useRouter
+import Image from 'next/image';
 
 /* ---------- Ikon (SVG inline, tanpa dependensi) ---------- */
 
 const IkonLogo = () => (
-  <svg viewBox="0 0 100 120" className="h-24 w-24 drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]" aria-hidden>
-    <defs>
-      <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#1d4ed8" />
-        <stop offset="1" stopColor="#1e3a8a" />
-      </linearGradient>
-      <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#60a5fa" />
-        <stop offset="1" stopColor="#2563eb" />
-      </linearGradient>
-      <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#ffffff" />
-        <stop offset="1" stopColor="#c7d2fe" />
-      </linearGradient>
-    </defs>
-    <path d="M6 62C4 48 18 40 34 46C26 58 30 76 44 98C22 98 8 82 6 62Z" fill="url(#g1)" />
-    <path d="M26 44C24 28 40 18 58 24C48 38 52 58 66 80C42 82 28 64 26 44Z" fill="url(#g2)" />
-    <path d="M52 20C50 8 62 0 76 4C70 14 74 30 90 46C68 46 54 34 52 20Z" fill="url(#g3)" />
-  </svg>
+  <Image
+    src="/logo-sekolah.png"
+    alt="Logo Sekolah"
+    width={96}
+    height={96}
+    className="h-auto w-24 object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]"
+    priority
+  />
 );
 
 const IkonTagihan = ({ className = '' }: { className?: string }) => (
@@ -71,6 +63,18 @@ const IkonBantuan = () => (
 
 export default function HalamanUtama() {
   const [gelap, setGelap] = useState(false);
+  
+  // PERBAIKAN: Inisialisasi router dan state input
+  const router = useRouter();
+  const [idTagihan, setIdTagihan] = useState('');
+
+  // PERBAIKAN: Fungsi redirect saat disubmit
+  const handleCari = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (idTagihan.trim() !== '') {
+      router.push(`/bayar/${idTagihan.trim()}`);
+    }
+  };
 
   // Semua warna tema dikumpulkan di sini supaya mudah diubah
   const t = gelap
@@ -135,13 +139,14 @@ export default function HalamanUtama() {
           Masukkan ID Tagihan untuk melihat rincian dan membayar via QRIS
         </p>
 
-        {/* Form */}
-        <form action="/cari" method="GET" className="flex w-full flex-col gap-5">
+        {/* PERBAIKAN: Form diubah onSubmit-nya agar redirect via React State */}
+        <form onSubmit={handleCari} className="flex w-full flex-col gap-5">
           <label className={`flex items-center gap-4 rounded-2xl px-5 py-4 backdrop-blur-md transition-shadow focus-within:ring-2 focus-within:ring-blue-500/50 ${t.input}`}>
             <IkonTagihan className={`h-6 w-6 shrink-0 ${t.ikon}`} />
             <input
               type="text"
-              name="id"
+              value={idTagihan}
+              onChange={(e) => setIdTagihan(e.target.value)}
               required
               autoComplete="off"
               placeholder="ID Tagihan (INV-202610...)"
@@ -167,7 +172,7 @@ export default function HalamanUtama() {
           <span className={`h-px flex-1 ${t.garis}`} />
         </div>
 
-        {/* Tautan cepat (menggantikan tombol sosial pada referensi) */}
+        {/* Tautan cepat */}
         <div className="flex gap-5">
           <Link
             href="/admin"

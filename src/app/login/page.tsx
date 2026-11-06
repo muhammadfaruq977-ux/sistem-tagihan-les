@@ -3,29 +3,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 /* ---------- Ikon (SVG inline, tanpa dependensi) ---------- */
 
 const IkonLogo = () => (
-  <svg viewBox="0 0 100 120" className="h-24 w-24 drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]" aria-hidden>
-    <defs>
-      <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#1d4ed8" />
-        <stop offset="1" stopColor="#1e3a8a" />
-      </linearGradient>
-      <linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#60a5fa" />
-        <stop offset="1" stopColor="#2563eb" />
-      </linearGradient>
-      <linearGradient id="lg3" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#ffffff" />
-        <stop offset="1" stopColor="#c7d2fe" />
-      </linearGradient>
-    </defs>
-    <path d="M6 62C4 48 18 40 34 46C26 58 30 76 44 98C22 98 8 82 6 62Z" fill="url(#lg1)" />
-    <path d="M26 44C24 28 40 18 58 24C48 38 52 58 66 80C42 82 28 64 26 44Z" fill="url(#lg2)" />
-    <path d="M52 20C50 8 62 0 76 4C70 14 74 30 90 46C68 46 54 34 52 20Z" fill="url(#lg3)" />
-  </svg>
+  <Image
+    src="/logo-sekolah.png"
+    alt="Logo Sekolah"
+    width={96}
+    height={96}
+    className="h-auto w-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]"
+    priority
+  />
 );
 
 const IkonKunci = ({ className = '' }: { className?: string }) => (

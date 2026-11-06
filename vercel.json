@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/blast-tagihan",
-      "schedule": "0 8 1 * *" 
+      "path": "/api/cron/generate-tagihan",
+      "schedule": "0 8 1 * *"
     }
   ]
 }

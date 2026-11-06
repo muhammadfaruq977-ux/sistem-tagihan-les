@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import TombolLogout from './TombolLogout';
 import { Suspense } from 'react';
 import { connection } from 'next/server';
+import Image from 'next/image';
 
 /* ---------- Ikon & Komponen Pendukung ---------- */
 const Ikon = ({ children, className = 'h-6 w-6' }: { children: React.ReactNode; className?: string }) => (
@@ -12,17 +13,15 @@ const Ikon = ({ children, className = 'h-6 w-6' }: { children: React.ReactNode; 
   </svg>
 );
 
-const IkonLogo = ({ ukuran = 'h-10 w-10' }: { ukuran?: string }) => (
-  <svg viewBox="0 0 100 120" className={`${ukuran} drop-shadow-[0_4px_6px_rgba(37,99,235,0.35)]`} aria-hidden>
-    <defs>
-      <linearGradient id="ag1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#1d4ed8" /><stop offset="1" stopColor="#1e3a8a" /></linearGradient>
-      <linearGradient id="ag2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#60a5fa" /><stop offset="1" stopColor="#2563eb" /></linearGradient>
-      <linearGradient id="ag3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ffffff" /><stop offset="1" stopColor="#c7d2fe" /></linearGradient>
-    </defs>
-    <path d="M6 62C4 48 18 40 34 46C26 58 30 76 44 98C22 98 8 82 6 62Z" fill="url(#ag1)" />
-    <path d="M26 44C24 28 40 18 58 24C48 38 52 58 66 80C42 82 28 64 26 44Z" fill="url(#ag2)" />
-    <path d="M52 20C50 8 62 0 76 4C70 14 74 30 90 46C68 46 54 34 52 20Z" fill="url(#ag3)" />
-  </svg>
+const IkonLogo = () => (
+  <Image
+    src="/logo-sekolah.png"
+    alt="Logo Sekolah"
+    width={96}
+    height={96}
+    className="h-auto w-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]"
+    priority
+  />
 );
 
 const panel = 'bg-white/50 border border-white/80 backdrop-blur-xl shadow-[10px_10px_24px_rgba(163,184,214,0.45),-8px_-8px_20px_rgba(255,255,255,0.9)]';
@@ -32,7 +31,7 @@ const menu = [
   { href: '/admin', label: 'Ringkasan', aktif: true, ikon: <Ikon><rect x="3.5" y="3.5" width="7" height="7" rx="2" /><rect x="13.5" y="3.5" width="7" height="7" rx="2" /><rect x="3.5" y="13.5" width="7" height="7" rx="2" /><rect x="13.5" y="13.5" width="7" height="7" rx="2" /></Ikon> },
   { href: '/admin/siswa', label: 'Data Siswa', ikon: <Ikon><circle cx="9" cy="8" r="3.2" /><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.4c1.8.8 3 2.6 3 5.6" /></Ikon> },
   { href: '/admin/tagihan', label: 'Kelola Tagihan', ikon: <Ikon><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z" /><path d="M9 8h6M9 12h6" /></Ikon> },
-  { href: '/admin/dashboard', label: 'Laporan Excel', ikon: <Ikon><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z" /><path d="M14 3v5h5M12 11v6M9 14l3 3 3-3" /></Ikon> },
+  { href: '/api/export-excel', label: 'Laporan Excel', isDownload: true, ikon: <Ikon><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z" /><path d="M14 3v5h5M12 11v6M9 14l3 3 3-3" /></Ikon> },
 ];
 
 // Komponen Async untuk Isi Dashboard
@@ -104,11 +103,26 @@ export default function HalamanAdmin() {
             </div>
           </div>
           <nav className="mt-8 flex flex-col gap-3" aria-label="Menu admin">
-            {menu.map((m) => (
-              <Link key={m.href} href={m.href} aria-current={m.aktif ? 'page' : undefined} className={m.aktif ? `flex items-center gap-4 rounded-2xl px-5 py-4 font-bold text-blue-600 ${cekung}` : 'flex items-center gap-4 rounded-2xl border border-white/80 bg-white/50 px-5 py-4 font-bold text-slate-600 shadow-[5px_5px_12px_rgba(163,184,214,0.4),-4px_-4px_10px_rgba(255,255,255,0.9)] transition-all hover:text-blue-600'}>
-                {m.ikon}{m.label}
-              </Link>
-            ))}
+            {menu.map((m) => {
+              const baseClass = m.aktif 
+                ? `flex items-center gap-4 rounded-2xl px-5 py-4 font-bold text-blue-600 ${cekung}` 
+                : 'flex items-center gap-4 rounded-2xl border border-white/80 bg-white/50 px-5 py-4 font-bold text-slate-600 shadow-[5px_5px_12px_rgba(163,184,214,0.4),-4px_-4px_10px_rgba(255,255,255,0.9)] transition-all hover:text-blue-600';
+              
+              // PERBAIKAN: Jika ini tombol download, gunakan tag HTML <a> standar
+              if (m.isDownload) {
+                return (
+                  <a key={m.href} href={m.href} download className={baseClass}>
+                    {m.ikon}{m.label}
+                  </a>
+                );
+              }
+              
+              return (
+                <Link key={m.href} href={m.href} aria-current={m.aktif ? 'page' : undefined} className={baseClass}>
+                  {m.ikon}{m.label}
+                </Link>
+              );
+            })}
           </nav>
         </div>
         <TombolLogout />
@@ -116,9 +130,13 @@ export default function HalamanAdmin() {
 
       <main className="relative z-[1] flex-1 px-5 py-8 sm:px-10 sm:py-12">
         <nav className="-mx-1 mb-8 flex gap-3 overflow-x-auto px-1 pb-2 lg:hidden" aria-label="Menu admin">
-          {menu.map((m) => (
-            <Link key={m.href} href={m.href} className={`shrink-0 rounded-2xl px-5 py-3 text-sm font-bold ${m.aktif ? `text-blue-600 ${cekung}` : `text-slate-600 ${panel}`}`}>{m.label}</Link>
-          ))}
+          {menu.map((m) => {
+             const baseClass = `shrink-0 rounded-2xl px-5 py-3 text-sm font-bold ${m.aktif ? `text-blue-600 ${cekung}` : `text-slate-600 ${panel}`}`;
+             if (m.isDownload) {
+               return <a key={m.href} href={m.href} download className={baseClass}>{m.label}</a>;
+             }
+             return <Link key={m.href} href={m.href} className={baseClass}>{m.label}</Link>;
+          })}
         </nav>
 
         <header className="mb-10 flex items-center justify-between gap-4">
@@ -129,7 +147,6 @@ export default function HalamanAdmin() {
           <Link href="/" className={`shrink-0 rounded-2xl px-6 py-3 text-sm font-bold text-blue-600 transition-transform active:scale-95 ${panel}`}>Halaman depan</Link>
         </header>
 
-        {/* Suspense Boundary Sesuai Aturan Next.js */}
         <Suspense fallback={<div className="p-12 text-center font-bold text-slate-400">Memuat statistik...</div>}>
           <KontenDashboard />
         </Suspense>
