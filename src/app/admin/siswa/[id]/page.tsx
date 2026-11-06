@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { connection } from 'next/server';
 import { TombolBayarCash } from '../TombolClient';
 import { Suspense } from 'react';
+export const dynamic = 'force-dynamic'; // <-- Tambahkan baris ini
 
 const panel = 'bg-white/50 border border-white/80 backdrop-blur-xl shadow-[10px_10px_24px_rgba(163,184,214,0.45),-8px_-8px_20px_rgba(255,255,255,0.9)]';
 const cekung = 'bg-[#e9f0fb]/80 border border-white/80 shadow-[inset_5px_5px_12px_rgba(163,184,214,0.45),inset_-5px_-5px_12px_rgba(255,255,255,0.95)]';

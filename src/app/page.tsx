@@ -14,7 +14,7 @@ const IkonLogo = () => (
     alt="Logo Sekolah"
     width={96}
     height={96}
-    className="h-auto w-24 object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]"
+    className="h-auto w-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]"
     priority
   />
 );

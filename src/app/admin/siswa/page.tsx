@@ -14,11 +14,11 @@ const Ikon = ({ children, className = 'h-6 w-6' }: { children: React.ReactNode; 
 
 const IkonLogo = () => (
   <Image
-    src="/logo-sekolah-integral-hidayatullah-standarisasi.png"
+    src="/logo-sekolah.png"
     alt="Logo Sekolah"
     width={96}
     height={96}
-    className="w-24 h-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]"
+    className="w-auto h-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]"
     priority
   />
 );
