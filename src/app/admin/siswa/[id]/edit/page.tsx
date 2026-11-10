@@ -12,7 +12,11 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-// Komponen terpisah untuk form yang mengakses database
+// Wajib ditambahkan untuk mencegah error prerender pada rute dinamis berparameter
+export async function generateStaticParams() {
+  return [];
+}
+
 async function FormEditSiswa({ idSiswa }: { idSiswa: string }) {
   await connection();
 
@@ -68,7 +72,6 @@ async function FormEditSiswa({ idSiswa }: { idSiswa: string }) {
   );
 }
 
-// Halaman Utama yang membungkus pemanggilan database dengan Suspense
 export default async function HalamanEditSiswa({ params }: PageProps) {
   const resolvedParams = await params;
   const idSiswa = resolvedParams.id;
