@@ -14,11 +14,11 @@ const Ikon = ({ children, className = 'h-6 w-6' }: { children: React.ReactNode; 
 
 const IkonLogo = () => (
   <Image
-    src="/logo-sekolah.png"
+    src="/logo-sekolah-integral-hidayatullah-standarisasi.png"
     alt="Logo Sekolah"
     width={96}
     height={96}
-    className="w-auto h-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]"
+    className="w-24 h-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]"
     priority
   />
 );
@@ -34,7 +34,7 @@ const menu = [
 ];
 
 /* ---------- Komponen Tabel Siswa ---------- */
-async function DaftarSiswa({ search, sort }: { search: string, sort: string }) {
+async function DaftarSiswa({ search, sort, les }: { search: string, sort: string, les: string }) {
   await connection();
 
   // Logika Pengurutan
@@ -44,11 +44,18 @@ async function DaftarSiswa({ search, sort }: { search: string, sort: string }) {
   else if (sort === 'id_asc') orderBy = { id: 'asc' };
   else if (sort === 'id_desc') orderBy = { id: 'desc' };
 
-  // Tarik Data (dengan filter pencarian nama)
+  // Logika Filter Where
+  let whereClause: any = {
+    nama: { contains: search, mode: 'insensitive' }
+  };
+
+  if (les && les !== 'ALL') {
+    whereClause.les_diikuti = les;
+  }
+
+  // Tarik Data (dengan filter pencarian nama & jenis les)
   const dataSiswa = await prisma.siswa.findMany({
-    where: {
-      nama: { contains: search, mode: 'insensitive' }
-    },
+    where: whereClause,
     orderBy,
   });
 
@@ -56,19 +63,20 @@ async function DaftarSiswa({ search, sort }: { search: string, sort: string }) {
 
   return (
     <section className={`rounded-[2rem] p-6 sm:p-8 ${panel} overflow-x-auto`} aria-label="Tabel Siswa">
-      <table className="w-full text-left border-collapse min-w-[800px]">
+      <table className="w-full text-left border-collapse min-w-[900px]">
         <thead>
           <tr className="text-slate-400 text-xs font-bold uppercase tracking-widest border-b-2 border-white/60">
             <th className="pb-4 pl-2">ID Siswa</th>
             <th className="pb-4">Nama Lengkap</th>
             <th className="pb-4">No. WhatsApp</th>
             <th className="pb-4">Besaran SPP</th>
+            <th className="pb-4">Jenis Les</th>
             <th className="pb-4 text-center">Aksi</th>
           </tr>
         </thead>
         <tbody>
           {dataSiswa.length === 0 ? (
-            <tr><td colSpan={5} className="text-center py-8 text-slate-400 font-bold">Data siswa tidak ditemukan.</td></tr>
+            <tr><td colSpan={6} className="text-center py-8 text-slate-400 font-bold">Data siswa tidak ditemukan.</td></tr>
           ) : (
             dataSiswa.map((siswa: any, idx) => {
               const idUnik = siswa.id || siswa.id_siswa;
@@ -78,9 +86,21 @@ async function DaftarSiswa({ search, sort }: { search: string, sort: string }) {
                   <td className="py-4 font-bold text-[#0b1230]">{siswa.nama}</td>
                   <td className="py-4 font-bold text-slate-600">{siswa.nomor_wa || '-'}</td>
                   <td className="py-4 font-black text-blue-600">{formatRupiah(siswa.besaran_spp)}</td>
-                  <td className="py-4 flex justify-center gap-3">
-                    <Link href={`/admin/siswa/${idUnik}`} className={`px-4 py-2 text-xs font-bold text-blue-600 rounded-xl ${cekung} hover:text-blue-700 transition-colors`}>Detail & Bayar</Link>
-                    <TombolHapus idSiswa={idUnik} />
+                  <td className="py-4 font-bold text-slate-600">
+                    <span className="px-3 py-1 text-xs bg-blue-50 text-blue-600 rounded-lg border border-blue-100">
+                      {siswa.les_diikuti || '-'}
+                    </span>
+                  </td>
+                  <td className="py-4 text-center">
+                    <div className="flex justify-center items-center gap-2">
+                      <Link href={`/admin/siswa/${idUnik}/edit`} className={`px-3 py-2 text-xs font-bold text-amber-600 rounded-xl ${cekung} hover:text-amber-700 transition-colors`}>
+                        Edit
+                      </Link>
+                      <Link href={`/admin/siswa/${idUnik}`} className={`px-4 py-2 text-xs font-bold text-blue-600 rounded-xl ${cekung} hover:text-blue-700 transition-colors`}>
+                        Detail & Bayar
+                      </Link>
+                      <TombolHapus idSiswa={idUnik} />
+                    </div>
                   </td>
                 </tr>
               )
@@ -93,11 +113,11 @@ async function DaftarSiswa({ search, sort }: { search: string, sort: string }) {
 }
 
 /* ---------- Pembungkus Area Dinamis (Form + Tabel) ---------- */
-// Mengurai Promise Search Params di sini agar tidak memblokir render halaman utama
-async function AreaFilterDanTabel({ promiseParams }: { promiseParams: Promise<{ search?: string; sort?: string }> }) {
+async function AreaFilterDanTabel({ promiseParams }: { promiseParams: Promise<{ search?: string; sort?: string; les?: string }> }) {
   const resolvedParams = await promiseParams;
   const search = resolvedParams?.search || '';
   const sort = resolvedParams?.sort || 'id_asc';
+  const les = resolvedParams?.les || 'ALL';
 
   return (
     <>
@@ -110,6 +130,7 @@ async function AreaFilterDanTabel({ promiseParams }: { promiseParams: Promise<{ 
           placeholder="Cari nama siswa..."
           className={`flex-1 px-5 py-3 rounded-xl outline-none font-bold text-slate-700 placeholder:text-slate-400 ${cekung}`}
         />
+        
         <select
           name="sort"
           defaultValue={sort}
@@ -120,27 +141,39 @@ async function AreaFilterDanTabel({ promiseParams }: { promiseParams: Promise<{ 
           <option value="nama_asc">Urutkan: Nama (A ke Z)</option>
           <option value="nama_desc">Urutkan: Nama (Z ke A)</option>
         </select>
+
+        <select
+          name="les"
+          defaultValue={les}
+          className={`px-5 py-3 rounded-xl outline-none font-bold text-slate-700 cursor-pointer appearance-none ${cekung}`}
+        >
+          <option value="ALL">Semua Jenis Les</option>
+          <option value="Ekstra">Ekstra</option>
+          <option value="Les Al-Qur'an">Les Al-Qur'an</option>
+          <option value="Les Akademik">Les Akademik</option>
+        </select>
+
         <button type="submit" className="px-8 py-3 rounded-xl bg-blue-600 text-white font-bold shadow-[0_5px_15px_rgba(37,99,235,0.3)] hover:bg-blue-700 transition-colors">
           Cari
         </button>
-        {(search || sort !== 'id_asc') && (
+
+        {(search || sort !== 'id_asc' || les !== 'ALL') && (
           <Link href="/admin/siswa" className={`px-6 py-3 rounded-xl font-bold text-slate-500 hover:text-slate-700 transition-colors flex items-center justify-center border border-white/80 bg-white/50 shadow-[5px_5px_12px_rgba(163,184,214,0.4),-4px_-4px_10px_rgba(255,255,255,0.9)]`}>
             Reset
           </Link>
         )}
       </form>
 
-      <DaftarSiswa search={search} sort={sort} />
+      <DaftarSiswa search={search} sort={sort} les={les} />
     </>
   );
 }
 
 /* ---------- Halaman Utama Admin Siswa ---------- */
 interface PageProps {
-  searchParams: Promise<{ search?: string; sort?: string }>;
+  searchParams: Promise<{ search?: string; sort?: string; les?: string }>;
 }
 
-// Fungsi utama dikembalikan menjadi sinkron
 export default function HalamanDataSiswa({ searchParams }: PageProps) {
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#f0f5fc] via-[#e6eefa] to-[#dde7f6] font-sans text-slate-700 lg:flex">

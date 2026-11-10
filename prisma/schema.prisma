@@ -18,6 +18,7 @@ model Siswa {
   id           String    @id @default(uuid())
   nama         String
   nomor_wa     String    // Format standar: 628xxxxxxxxxx
+  les_diikuti  String    @default("Ekstra")
   besaran_spp  Int       @default(0)
   status_aktif Boolean   @default(true)
   createdAt    DateTime  @default(now())

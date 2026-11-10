@@ -4,7 +4,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import * as XLSX from 'xlsx'; // <--- Baris ini yang sebelumnya terlewat
+import * as XLSX from 'xlsx';
 
 // 1. Aksi Tambah Siswa Manual
 export async function tambahSiswa(formData: FormData) {
@@ -14,12 +14,13 @@ export async function tambahSiswa(formData: FormData) {
   
   const besaranString = formData.get('besaran_spp') as string;
   const besaran_spp = besaranString ? parseInt(besaranString, 10) : 0;
+  const les_diikuti = formData.get('les_diikuti') as string;
 
   if (!id || !nama) return;
 
   try {
     await prisma.siswa.create({
-      data: { id, nama, nomor_wa, besaran_spp } as any
+      data: { id, nama, nomor_wa, besaran_spp, les_diikuti } as any
     });
   } catch (error) {
     console.error("Gagal menambah siswa:", error);
@@ -45,7 +46,7 @@ export async function hapusSiswa(formData: FormData) {
   revalidatePath('/admin');
 }
 
-// Timpa fungsi bayarCash di src/app/admin/actions.ts dengan ini:
+// 3. Aksi Pembayaran Cash
 export async function bayarCash(formData: FormData) {
   const id_tagihan = formData.get('id_tagihan') as string;
   const id_siswa = formData.get('id_siswa') as string;
@@ -60,7 +61,9 @@ export async function bayarCash(formData: FormData) {
 
     // 2. Kirim notifikasi WA via Fonnte jika nomor WA tersedia
     if (tagihanUpdate.siswa.nomor_wa) {
-      const pesanWhatsApp = `✅ *PEMBAYARAN BERHASIL (CASH)*\n\nTerima kasih Bapak/Ibu wali dari *${tagihanUpdate.siswa.nama}*.\n\nPembayaran tagihan SPP periode *${tagihanUpdate.bulan_tahun}* sebesar *Rp ${tagihanUpdate.nominal.toLocaleString('id-ID')}* telah kami terima.\n\nStatus tagihan saat ini: *LUNAS*.\n\nTerima kasih atas kerja samanya.`;
+      const formatRupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(tagihanUpdate.nominal);
+      
+      const pesanWhatsApp = `✅ *PEMBAYARAN BERHASIL (CASH)*\n\nTerima kasih Bapak/Ibu wali dari *${tagihanUpdate.siswa.nama}*.\n\nPembayaran tagihan SPP periode *${tagihanUpdate.bulan_tahun}* sebesar *${formatRupiah}* telah kami terima.\n\nStatus tagihan saat ini: *LUNAS*.\n\nTerima kasih atas kerja samanya.`;
 
       await fetch('https://api.fonnte.com/send', {
         method: 'POST',
@@ -103,6 +106,7 @@ export async function tambahSiswaMassal(formData: FormData) {
       nama: String(row['Nama Lengkap'] || '').trim(),
       nomor_wa: String(row['Nomor WhatsApp'] || '').trim(),
       besaran_spp: parseInt(String(row['Besaran SPP'] || '0'), 10),
+      les_diikuti: String(row['Jenis Les'] || 'Ekstra').trim(),
       status_aktif: true,
     })).filter(s => s.id && s.nama);
 
@@ -118,7 +122,36 @@ export async function tambahSiswaMassal(formData: FormData) {
     throw new Error("Format Excel salah atau gagal diunggah.");
   }
 
-  // Refresh halaman untuk melihat data baru
   revalidatePath('/admin/siswa');
+  redirect('/admin/siswa');
+}
+
+// 5. Aksi Edit / Update Siswa
+export async function updateSiswa(formData: FormData) {
+  const id = formData.get('id') as string;
+  const nama = formData.get('nama') as string;
+  const nomor_wa = formData.get('nomor_wa') as string;
+  const besaran_spp = Number(formData.get('besaran_spp'));
+  const les_diikuti = formData.get('les_diikuti') as string;
+
+  if (!id || !nama) return;
+
+  try {
+    await prisma.siswa.update({
+      where: { id: id },
+      data: {
+        nama,
+        nomor_wa,
+        besaran_spp,
+        les_diikuti,
+      }
+    });
+  } catch (error) {
+    console.error("Gagal mengupdate siswa:", error);
+    throw new Error("Gagal mengupdate data siswa.");
+  }
+
+  revalidatePath('/admin/siswa');
+  revalidatePath(`/admin/siswa/${id}`);
   redirect('/admin/siswa');
 }

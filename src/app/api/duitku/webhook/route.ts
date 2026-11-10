@@ -87,7 +87,9 @@ export async function POST(request: Request) {
 
         // Jika nomor WhatsApp tersedia, kirim pesan notifikasi otomatis
         if (tagihanData && tagihanData.siswa && tagihanData.siswa.nomor_wa) {
-          const pesanWhatsApp = `✅ *PEMBAYARAN ONLINE BERHASIL*\n\nTerima kasih Bapak/Ibu wali dari *${tagihanData.siswa.nama}*.\n\nPembayaran tagihan SPP periode *${tagihanData.bulan_tahun}* sebesar *Rp ${tagihanData.nominal.toLocaleString('id-ID')}* melalui sistem Duitku telah kami terima.\n\nStatus tagihan saat ini: *LUNAS*.\n\nTerima kasih atas kerja samanya.`;
+          const formatRupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(tagihanData.nominal);
+          
+          const pesanWhatsApp = `✅ *PEMBAYARAN ONLINE BERHASIL*\n\nTerima kasih Bapak/Ibu wali dari *${tagihanData.siswa.nama}*.\n\nPembayaran tagihan SPP periode *${tagihanData.bulan_tahun}* sebesar *${formatRupiah}* melalui sistem Duitku telah kami terima.\n\nStatus tagihan saat ini: *LUNAS*.\n\nTerima kasih atas kerja samanya.`;
 
           try {
             await fetch('https://api.fonnte.com/send', {
@@ -100,6 +102,7 @@ export async function POST(request: Request) {
                 target: tagihanData.siswa.nomor_wa,
                 message: pesanWhatsApp,
                 countryCode: '62',
+                delay: '3' // Jeda 3 detik dari Fonnte untuk keamanan pesan instan
               }),
             });
             console.log(`[SUCCESS] Notifikasi Lunas (Fonnte) terkirim ke WA ${tagihanData.siswa.nama}`);
