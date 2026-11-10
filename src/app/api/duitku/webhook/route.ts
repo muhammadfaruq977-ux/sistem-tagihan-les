@@ -102,7 +102,6 @@ export async function POST(request: Request) {
                 target: tagihanData.siswa.nomor_wa,
                 message: pesanWhatsApp,
                 countryCode: '62',
-                delay: '3' // Jeda 3 detik dari Fonnte untuk keamanan pesan instan
               }),
             });
             console.log(`[SUCCESS] Notifikasi Lunas (Fonnte) terkirim ke WA ${tagihanData.siswa.nama}`);
