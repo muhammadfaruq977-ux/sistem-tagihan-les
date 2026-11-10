@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { updateSiswa } from '../../../actions';
 import { Suspense } from 'react';
-import { connection } from 'next/server';
 
 const panel = 'bg-white/50 border border-white/80 backdrop-blur-xl shadow-[10px_10px_24px_rgba(163,184,214,0.45),-8px_-8px_20px_rgba(255,255,255,0.9)]';
 const cekung = 'bg-[#e9f0fb]/80 border border-white/80 shadow-[inset_5px_5px_12px_rgba(163,184,214,0.45),inset_-5px_-5px_12px_rgba(255,255,255,0.95)]';
@@ -12,13 +11,11 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-// Wajib ditambahkan untuk mencegah error prerender pada rute dinamis berparameter
-export async function generateStaticParams() {
-  return [];
-}
-
-async function FormEditSiswa({ idSiswa }: { idSiswa: string }) {
-  await connection();
+// 1. Komponen ini yang akan melakukan "await" pada params dan database
+async function FormEditSiswa({ paramsPromise }: { paramsPromise: Promise<{ id: string }> }) {
+  // Await params dilakukan DI DALAM Suspense boundary
+  const resolvedParams = await paramsPromise;
+  const idSiswa = resolvedParams.id;
 
   const siswa = await prisma.siswa.findUnique({
     where: { id: idSiswa }
@@ -72,10 +69,8 @@ async function FormEditSiswa({ idSiswa }: { idSiswa: string }) {
   );
 }
 
-export default async function HalamanEditSiswa({ params }: PageProps) {
-  const resolvedParams = await params;
-  const idSiswa = resolvedParams.id;
-
+// 2. Halaman Utama TIDAK BOLEH asinkron (hapus 'async') agar tidak nge-block build
+export default function HalamanEditSiswa({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f0f5fc] via-[#e6eefa] to-[#dde7f6] flex items-center justify-center p-6 text-slate-700 font-sans relative overflow-hidden py-12">
       <div aria-hidden className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full border-[14px] border-white/80 bg-gradient-to-br from-blue-200/60 to-blue-100/40 shadow-[inset_0_0_30px_rgba(96,140,255,0.25)]" />
@@ -84,8 +79,9 @@ export default async function HalamanEditSiswa({ params }: PageProps) {
         <h1 className="text-2xl font-extrabold text-[#0b1230] mb-2">Edit Data Siswa</h1>
         <p className="text-sm text-slate-500 mb-8">Perbarui informasi data siswa</p>
 
+        {/* 3. Params dioper mentah-mentah ke komponen anak yang dibungkus Suspense */}
         <Suspense fallback={<div className="py-12 text-center font-bold text-slate-400">Memuat data siswa...</div>}>
-          <FormEditSiswa idSiswa={idSiswa} />
+          <FormEditSiswa paramsPromise={params} />
         </Suspense>
 
         <Link href="/admin/siswa" className="block text-center mt-8 text-sm font-bold text-slate-400 hover:text-blue-600 transition-colors">
