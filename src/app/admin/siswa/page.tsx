@@ -14,7 +14,7 @@ const Ikon = ({ children, className = 'h-6 w-6' }: { children: React.ReactNode; 
 
 const IkonLogo = () => (
   <Image
-    src="/logo-sekolah-integral-hidayatullah-standarisasi.png"
+    src="/logo-sekolah.png"
     alt="Logo Sekolah"
     width={96}
     height={96}
