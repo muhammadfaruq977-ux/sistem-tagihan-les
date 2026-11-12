@@ -52,11 +52,6 @@ export async function POST(request: Request) {
       .update(stringToSignMd5)
       .digest('hex');
 
-    console.log(">>> HASH CHECK:");
-    console.log("Diterima (Incoming) :", incomingSignature);
-    console.log("Hasil HMAC SHA256   :", hmacSignature);
-    console.log("Hasil MD5           :", md5Signature);
-
     // Cek pencocokan signature
     const isValidSignature = 
       incomingSignature.toLowerCase() === hmacSignature.toLowerCase() ||
@@ -67,49 +62,76 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid Signature' }, { status: 403 });
     }
 
-    // 4. Update status ke Supabase jika pembayaran sukses ("00")
+    // 4. Update status ke database jika pembayaran sukses ("00")
     if (resultCode === '00') {
-      // Gunakan updateMany agar Prisma TIDAK CRASH jika id_tagihan tidak sengaja terhapus
       const updateResult = await prisma.tagihan.updateMany({
         where: { id_tagihan: merchantOrderId },
         data: { status: 'PAID' }
       });
 
       if (updateResult.count > 0) {
-        console.log(`[SUCCESS] Tagihan ${merchantOrderId} berhasil di-update menjadi PAID di Supabase.`);
+        console.log(`[SUCCESS] Tagihan ${merchantOrderId} berhasil di-update menjadi PAID.`);
 
-        // --- AWAL INTEGRASI FONNTE ---
-        // Karena updateMany tidak mereturn data relasi, kita ambil data siswa secara terpisah
+        // --- AWAL INTEGRASI META WHATSAPP API ---
         const tagihanData = await prisma.tagihan.findFirst({
           where: { id_tagihan: merchantOrderId },
           include: { siswa: true }
         });
 
-        // Jika nomor WhatsApp tersedia, kirim pesan notifikasi otomatis
         if (tagihanData && tagihanData.siswa && tagihanData.siswa.nomor_wa) {
-          const formatRupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(tagihanData.nominal);
+          const formatRupiah = new Intl.NumberFormat('id-ID', { 
+            style: 'currency', currency: 'IDR', minimumFractionDigits: 0 
+          }).format(tagihanData.nominal);
           
-          const pesanWhatsApp = `✅ *PEMBAYARAN ONLINE BERHASIL*\n\nTerima kasih Bapak/Ibu wali dari *${tagihanData.siswa.nama}*.\n\nPembayaran tagihan SPP periode *${tagihanData.bulan_tahun}* sebesar *${formatRupiah}* melalui sistem Duitku telah kami terima.\n\nStatus tagihan saat ini: *LUNAS*.\n\nTerima kasih atas kerja samanya.`;
+          // Sanitasi nomor WA (Wajib untuk Meta API)
+          let nomorWaValid = tagihanData.siswa.nomor_wa;
+          if (nomorWaValid.startsWith('0')) {
+            nomorWaValid = '62' + nomorWaValid.substring(1);
+          } else if (nomorWaValid.startsWith('+')) {
+            nomorWaValid = nomorWaValid.substring(1);
+          }
 
           try {
-            await fetch('https://api.fonnte.com/send', {
+            const responMeta = await fetch(`https://graph.facebook.com/v19.0/${process.env.WA_PHONE_NUMBER_ID}/messages`, {
               method: 'POST',
               headers: {
-                'Authorization': process.env.FONNTE_TOKEN!,
+                'Authorization': `Bearer ${process.env.WA_ACCESS_TOKEN}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                target: tagihanData.siswa.nomor_wa,
-                message: pesanWhatsApp,
-                countryCode: '62',
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to: nomorWaValid,
+                type: "template",
+                template: {
+                  name: "pembayaran_berhasil", // 👈 Wajib sama dengan nama template di Meta
+                  language: { code: "id" },
+                  components: [
+                    {
+                      type: "body",
+                      parameters: [
+                        { type: "text", text: tagihanData.siswa.nama },  // {{1}}
+                        { type: "text", text: tagihanData.bulan_tahun }, // {{2}}
+                        { type: "text", text: formatRupiah },            // {{3}}
+                        { type: "text", text: tagihanData.id_tagihan }   // {{4}}
+                      ]
+                    }
+                  ]
+                }
               }),
             });
-            console.log(`[SUCCESS] Notifikasi Lunas (Fonnte) terkirim ke WA ${tagihanData.siswa.nama}`);
+
+            const hasil = await responMeta.json();
+            if (hasil.error) {
+              console.error(`[META ERROR] Gagal notifikasi lunas ke ${tagihanData.siswa.nama}:`, hasil.error.message);
+            } else {
+              console.log(`[SUCCESS] Notifikasi Lunas terkirim ke WA ${tagihanData.siswa.nama}`);
+            }
           } catch (waError) {
-            console.error(`[ERROR] Gagal mengirim WA Fonnte ke ${tagihanData.siswa.nama}:`, waError);
+            console.error(`[ERROR] Gagal mengirim WA Meta ke ${tagihanData.siswa.nama}:`, waError);
           }
         }
-        // --- AKHIR INTEGRASI FONNTE ---
+        // --- AKHIR INTEGRASI META WHATSAPP API ---
 
       } else {
         console.log(`[WARNING] Tagihan ${merchantOrderId} sukses di Duitku, tapi ID tidak ditemukan di Database.`);

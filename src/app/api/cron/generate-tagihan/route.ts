@@ -1,10 +1,16 @@
-// src/app/api/cron/generate-tagihan/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { connection } from 'next/server';
 
 export async function GET(request: Request) {
   await connection();
+
+  // 1. PENGAMANAN RUTE (SECURITY CHECK)
+  // Mencegah orang asing mengeksekusi URL ini
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new NextResponse('Unauthorized: Invalid Cron Secret', { status: 401 });
+  }
 
   const today = new Date();
   const dateFormatter = new Intl.DateTimeFormat('id-ID', {
@@ -25,9 +31,11 @@ export async function GET(request: Request) {
         where: { id_siswa: siswa.id, bulan_tahun: periode }
       });
 
-      const formatRupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(siswa.besaran_spp || 0);
+      const formatRupiah = new Intl.NumberFormat('id-ID', { 
+        style: 'currency', currency: 'IDR', minimumFractionDigits: 0 
+      }).format(siswa.besaran_spp || 0);
 
-      // Pastikan format nomor WA diawali dengan 62 (hapus awalan 0 atau +)
+      // Sanitasi Nomor WA
       let nomorWaValid = siswa.nomor_wa || '';
       if (nomorWaValid.startsWith('0')) {
         nomorWaValid = '62' + nomorWaValid.substring(1);
@@ -52,8 +60,6 @@ export async function GET(request: Request) {
         counterTagihan++;
 
         if (nomorWaValid) {
-          const pesanBaru = `Halo Bapak/Ibu wali dari *${siswa.nama}*.\n\nBerikut adalah tagihan SPP Kelas Tambahan Integral (Program: *${siswa.les_diikuti}*) untuk periode *${periode}* sebesar *${formatRupiah}*.\n\nSilakan lakukan pembayaran melalui link berikut:\nhttps://kelastambahanintegral.web.id/bayar/${tagihanBaru.id_tagihan}\n\nTerima kasih.`;
-          
           try {
             const responMeta = await fetch(`https://graph.facebook.com/v19.0/${process.env.WA_PHONE_NUMBER_ID}/messages`, {
               method: 'POST',
@@ -65,10 +71,22 @@ export async function GET(request: Request) {
                 messaging_product: "whatsapp",
                 recipient_type: "individual",
                 to: nomorWaValid,
-                type: "text",
-                text: { 
-                  preview_url: true,
-                  body: pesanBaru 
+                type: "template", // WAJIB TEMPLATE
+                template: {
+                  name: "tagihan_les", // GANTI dengan nama template persis di Dasbor Meta Anda
+                  language: { code: "id" },
+                  components: [
+                    {
+                      type: "body",
+                      parameters: [
+                        { type: "text", text: siswa.nama },                  // Variabel {{1}} di Meta
+                        { type: "text", text: siswa.les_diikuti },           // Variabel {{2}} di Meta
+                        { type: "text", text: periode },                     // Variabel {{3}} di Meta
+                        { type: "text", text: formatRupiah },                // Variabel {{4}} di Meta
+                        { type: "text", text: tagihanBaru.id_tagihan }       // Variabel {{5}} untuk link
+                      ]
+                    }
+                  ]
                 }
               }),
             });
@@ -87,8 +105,6 @@ export async function GET(request: Request) {
         counterPengingat++;
 
         if (nomorWaValid) {
-          const pesanPengingat = `*PENGINGAT PEMBAYARAN SPP*\n\nHalo Bapak/Ibu wali dari *${siswa.nama}*.\n\nKami mengingatkan bahwa tagihan SPP Kelas Tambahan Integral (Program: *${siswa.les_diikuti}*) periode *${periode}* sebesar *${formatRupiah}* saat ini masih berstatus *BELUM LUNAS*.\n\nAbaikan pesan ini jika Anda baru saja melakukan pembayaran.\n\nLink Pembayaran:\nhttps://kelastambahanintegral.web.id/bayar/${tagihanEksisting.id_tagihan}\n\nTerima kasih.`;
-          
           try {
             const responMeta = await fetch(`https://graph.facebook.com/v19.0/${process.env.WA_PHONE_NUMBER_ID}/messages`, {
               method: 'POST',
@@ -100,10 +116,22 @@ export async function GET(request: Request) {
                 messaging_product: "whatsapp",
                 recipient_type: "individual",
                 to: nomorWaValid,
-                type: "text",
-                text: { 
-                  preview_url: true,
-                  body: pesanPengingat 
+                type: "template",
+                template: {
+                  name: "pengingat_spp", // GANTI dengan nama template pengingat di Dasbor Meta Anda
+                  language: { code: "id" },
+                  components: [
+                    {
+                      type: "body",
+                      parameters: [
+                        { type: "text", text: siswa.nama },
+                        { type: "text", text: siswa.les_diikuti },
+                        { type: "text", text: periode },
+                        { type: "text", text: formatRupiah },
+                        { type: "text", text: tagihanEksisting.id_tagihan }
+                      ]
+                    }
+                  ]
                 }
               }),
             });

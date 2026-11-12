@@ -1,25 +1,28 @@
 import { NextResponse } from 'next/server';
 
-// Buat kata sandi rahasia Anda sendiri (bebas)
-const VERIFY_TOKEN = 'RAHASIA_KELAS_INTEGRAL_123';
-
-// 1. Fungsi GET: Syarat wajib dari Meta untuk memverifikasi URL ini aktif
+// 1. Fungsi GET: Verifikasi URL
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get('hub.mode');
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  // Cek apakah token yang dikirim Meta cocok dengan token buatan kita
+  // Mengambil token dari .env Vercel (dengan fallback ke string lokal Anda jika .env gagal dimuat)
+  const VERIFY_TOKEN = process.env.WA_WEBHOOK_VERIFY_TOKEN || 'RAHASIA_KELAS_INTEGRAL_123';
+
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
     console.log('Webhook berhasil diverifikasi oleh Meta!');
-    return new NextResponse(challenge, { status: 200 });
+    // WAJIB menggunakan text/plain agar Meta tidak menolak challenge
+    return new NextResponse(challenge, { 
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' }
+    });
   }
 
   return new NextResponse('Forbidden', { status: 403 });
 }
 
-// 2. Fungsi POST: Menangkap status terkirim/dibaca dan pesan balasan wali murid
+// 2. Fungsi POST: Menangkap data masuk
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -33,22 +36,36 @@ export async function POST(request: Request) {
           if (value.statuses) {
             const status = value.statuses[0];
             console.log(`[STATUS PESAN] Nomor ${status.recipient_id} -> ${status.status.toUpperCase()}`);
-            // Nanti Anda bisa gunakan ID pesan untuk update database Prisma di sini
+            // TODO: Update status di Prisma berdasarkan status.id (ID Pesan)
           }
 
           // B. Tangkap Pesan Masuk (Jika wali murid membalas)
           if (value.messages) {
             const message = value.messages[0];
-            console.log(`[PESAN MASUK] Dari ${message.from}: ${message.text?.body}`);
+            const sender = message.from;
+            
+            // Logika aman untuk menangkap teks biasa atau balasan tombol interaktif
+            let pesanMasuk = '';
+            if (message.type === 'text') {
+              pesanMasuk = message.text.body;
+            } else if (message.type === 'interactive' && message.interactive.button_reply) {
+              pesanMasuk = `[Tombol Ditekan]: ${message.interactive.button_reply.title}`;
+            } else {
+              pesanMasuk = `[Tipe pesan ${message.type} tidak didukung teks]`;
+            }
+
+            console.log(`[PESAN MASUK] Dari ${sender}: ${pesanMasuk}`);
           }
         }
       }
     }
     
-    // Wajib merespons dengan status 200 OK agar Meta tidak terus-menerus mengirim ulang data
+    // Selalu kembalikan 200 OK agar Meta berhenti mengirim spam laporan
     return NextResponse.json({ status: 'ok' }, { status: 200 });
+    
   } catch (error) {
     console.error('Error Webhook POST:', error);
-    return NextResponse.json({ error: 'Server Error' }, { status: 500 });
+    // Lebih aman mengembalikan 200 agar Meta tidak melakukan "retry DDOS" ke server Anda saat ada error parsing
+    return NextResponse.json({ status: 'error_caught' }, { status: 200 });
   }
 }
