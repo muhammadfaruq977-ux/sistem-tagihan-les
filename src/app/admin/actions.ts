@@ -106,7 +106,7 @@ export async function tambahSiswaMassal(formData: FormData) {
       nama: String(row['Nama Lengkap'] || '').trim(),
       nomor_wa: String(row['Nomor WhatsApp'] || '').trim(),
       besaran_spp: parseInt(String(row['Besaran SPP'] || '0'), 10),
-      les_diikuti: String(row['Jenis Les'] || 'Ekstra').trim(),
+      les_diikuti: String(row['Jenis Les'] || 'Paket 1 Kelas').trim(),
       status_aktif: true,
     })).filter(s => s.id && s.nama);
 

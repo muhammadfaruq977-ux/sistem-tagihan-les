@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/generate-tagihan",
-      "schedule": "0 0 15,19 * *"
+      "schedule": "0 0 19 * *"
     }
   ]
 }

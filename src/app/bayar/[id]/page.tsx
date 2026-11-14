@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 // 1. Terima params sebagai Promise di dalam komponen yang dilindungi Suspense
 async function DetailTagihan({ paramsPromise }: { paramsPromise: Promise<{ id: string }> }) {
   await connection();
-  
+
   // Lakukan await param di sini, BUKAN di komponen Page utama
   const resolvedParams = await paramsPromise;
   const id = resolvedParams.id;
@@ -29,7 +29,17 @@ async function DetailTagihan({ paramsPromise }: { paramsPromise: Promise<{ id: s
     );
   }
 
-  const formatRupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(tagihan.nominal);
+  // Kalkulasi SPP Murni + Biaya Admin QRIS 0,7% (dibulatkan ke atas)
+  const nominalSpp = tagihan.nominal;
+  const biayaAdmin = Math.ceil(nominalSpp * 0.007);
+  const totalBayar = nominalSpp + biayaAdmin;
+
+  const formatIDR = (angka: number) =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0
+    }).format(angka);
 
   return (
     <main className="max-w-md w-full p-8 sm:p-12 rounded-[2rem] bg-[#e8f0f7] shadow-[15px_15px_30px_#c7d3e1,-15px_-15px_30px_#ffffff] flex flex-col font-sans text-slate-700">
@@ -51,11 +61,23 @@ async function DetailTagihan({ paramsPromise }: { paramsPromise: Promise<{ id: s
           <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Keterangan</p>
           <p className="text-slate-800 font-bold text-lg">SPP Bulan {tagihan.bulan_tahun}</p>
         </div>
+
+        {/* Rincian Biaya */}
+        <div className="pt-4 border-t border-slate-300/60 space-y-2 text-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-slate-500 font-medium">Tagihan SPP</span>
+            <span className="text-slate-800 font-bold">{formatIDR(nominalSpp)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-slate-500 font-medium">Biaya Admin QRIS (0,7%)</span>
+            <span className="text-slate-800 font-bold">{formatIDR(biayaAdmin)}</span>
+          </div>
+        </div>
       </div>
 
       <div className="text-center mb-10">
         <p className="text-sm text-slate-400 font-bold uppercase tracking-widest mb-2">Total Pembayaran</p>
-        <p className="text-4xl font-black text-blue-600 drop-shadow-md">{formatRupiah}</p>
+        <p className="text-4xl font-black text-blue-600 drop-shadow-md">{formatIDR(totalBayar)}</p>
       </div>
 
       {tagihan.status === 'PAID' ? (

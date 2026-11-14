@@ -81,7 +81,7 @@ export async function POST(request: Request) {
         if (tagihanData && tagihanData.siswa && tagihanData.siswa.nomor_wa) {
           const formatRupiah = new Intl.NumberFormat('id-ID', { 
             style: 'currency', currency: 'IDR', minimumFractionDigits: 0 
-          }).format(tagihanData.nominal);
+          }).format(Number(amount));
           
           // Sanitasi nomor WA (Wajib untuk Meta API)
           let nomorWaValid = tagihanData.siswa.nomor_wa;

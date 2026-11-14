@@ -37,9 +37,9 @@ export default function HalamanTambahSiswa() {
             <label className="block text-xs font-bold tracking-widest text-slate-400 uppercase mb-2 ml-1">Les Yang Diikuti</label>
             <select name="les_diikuti" required className={`w-full px-5 py-4 rounded-2xl outline-none font-bold text-slate-700 bg-transparent cursor-pointer ${cekung}`}>
               <option value="" disabled selected>Pilih jenis les...</option>
-              <option value="Ekstra">Ekstra</option>
-              <option value="Les Al-Qur'an">Les Al-Qur'an</option>
-              <option value="Les Akademik">Les Akademik</option>
+              <option value="Paket 1 Kelas">Paket 1 Kelas</option>
+              <option value="Paket 2 Kelas">Paket 2 Kelas</option>
+              <option value="Paket 3 Kelas">Paket 3 Kelas</option>
             </select>
           </div>
 

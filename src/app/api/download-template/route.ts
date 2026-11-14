@@ -10,14 +10,14 @@ export async function GET() {
       'Nama Lengkap': 'Ahmad Budi',
       'Nomor WhatsApp': '6281234567890',
       'Besaran SPP': 150000,
-      'Jenis Les': 'Ekstra'
+      'Jenis Les': 'Paket 1 Kelas'
     },
     {
       'ID Siswa': 'NIS-002-Q',
       'Nama Lengkap': 'Siti Aisyah',
       'Nomor WhatsApp': '6289876543210',
       'Besaran SPP': 120000,
-      'Jenis Les': 'Les Al-Qur\'an'
+      'Jenis Les': 'Paket 2 Kelas'
     },
 
     {
@@ -25,7 +25,7 @@ export async function GET() {
       'Nama Lengkap': 'Supri',
       'Nomor WhatsApp': '6289876543210',
       'Besaran SPP': 120000,
-      'Jenis Les': 'Les Akademik'
+      'Jenis Les': 'Paket 3 Kelas'
     }
   ];
 

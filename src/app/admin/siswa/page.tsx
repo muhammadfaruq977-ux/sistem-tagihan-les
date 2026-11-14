@@ -148,9 +148,9 @@ async function AreaFilterDanTabel({ promiseParams }: { promiseParams: Promise<{ 
           className={`px-5 py-3 rounded-xl outline-none font-bold text-slate-700 cursor-pointer appearance-none ${cekung}`}
         >
           <option value="ALL">Semua Jenis Les</option>
-          <option value="Ekstra">Ekstra</option>
-          <option value="Les Al-Qur'an">Les Al-Qur'an</option>
-          <option value="Les Akademik">Les Akademik</option>
+          <option value="Paket 1 Kelas">Paket 1 Kelas</option>
+          <option value="Paket 2 Kelas">Paket 2 Kelas</option>
+          <option value="Paket 3 Kelas">Paket 3 Kelas</option>
         </select>
 
         <button type="submit" className="px-8 py-3 rounded-xl bg-blue-600 text-white font-bold shadow-[0_5px_15px_rgba(37,99,235,0.3)] hover:bg-blue-700 transition-colors">

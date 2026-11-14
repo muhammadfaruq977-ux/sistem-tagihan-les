@@ -35,7 +35,8 @@ export async function POST(request: Request) {
 
     const merchantCode = process.env.DUITKU_MERCHANT_CODE!;
     const merchantKey = process.env.DUITKU_MERCHANT_KEY!;
-    const paymentAmount = tagihan.nominal; 
+    const biayaAdmin = Math.ceil(tagihan.nominal * 0.007);
+    const paymentAmount = tagihan.nominal + biayaAdmin;
     
     // Otentikasi Header HMAC SHA256
     const timestamp = Date.now().toString();

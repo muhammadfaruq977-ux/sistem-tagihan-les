@@ -24,7 +24,6 @@ export async function GET(request: Request) {
   try {
     const semuaSiswa = await prisma.siswa.findMany();
     let counterTagihan = 0;
-    let counterPengingat = 0;
 
     for (const siswa of semuaSiswa) {
       const tagihanEksisting = await prisma.tagihan.findFirst({
@@ -99,58 +98,12 @@ export async function GET(request: Request) {
             console.error(`[JARINGAN] Gagal kirim WA ke ${siswa.nama}:`, err);
           }
         }
-
-      } else if (tagihanEksisting.status === 'UNPAID') {
-        // --- SKENARIO 2: Kirim WA Pengingat ---
-        counterPengingat++;
-
-        if (nomorWaValid) {
-          try {
-            const responMeta = await fetch(`https://graph.facebook.com/v19.0/${process.env.WA_PHONE_NUMBER_ID}/messages`, {
-              method: 'POST',
-              headers: { 
-                'Authorization': `Bearer ${process.env.WA_ACCESS_TOKEN}`, 
-                'Content-Type': 'application/json' 
-              },
-              body: JSON.stringify({
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                to: nomorWaValid,
-                type: "template",
-                template: {
-                  name: "pengingat_spp", // GANTI dengan nama template pengingat di Dasbor Meta Anda
-                  language: { code: "id" },
-                  components: [
-                    {
-                      type: "body",
-                      parameters: [
-                        { type: "text", text: siswa.nama },
-                        { type: "text", text: siswa.les_diikuti },
-                        { type: "text", text: periode },
-                        { type: "text", text: formatRupiah },
-                        { type: "text", text: tagihanEksisting.id_tagihan }
-                      ]
-                    }
-                  ]
-                }
-              }),
-            });
-
-            const hasil = await responMeta.json();
-            if (hasil.error) {
-               console.error(`[META ERROR] Gagal pengingat ke ${siswa.nama}:`, hasil.error.message);
-            }
-          } catch (err) {
-            console.error(`[JARINGAN] Gagal kirim WA pengingat ke ${siswa.nama}:`, err);
-          }
-        }
       }
     }
 
     return NextResponse.json({ 
       message: `Proses sukses untuk bulan ${periode}`, 
-      tagihanBaruDibuat: counterTagihan, 
-      pesanPengingatDikirim: counterPengingat 
+      tagihanBaruDibuat: counterTagihan
     }, { status: 200 });
 
   } catch (error) {
