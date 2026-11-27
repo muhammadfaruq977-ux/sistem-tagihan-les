@@ -13,8 +13,8 @@ const Ikon = ({ children, className = 'h-6 w-6' }: { children: React.ReactNode; 
 
 const IkonLogo = () => (
   <Image
-    src="/logo-sekolah.png"
-    alt="Logo Sekolah"
+    src="/logo-Les.png"
+    alt="Logo Les"
     width={96}
     height={96}
     className="w-auto h-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]"
@@ -178,7 +178,7 @@ export default function HalamanKelolaTagihan({ searchParams }: PageProps) {
         <header className="mb-8 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-[#0b1230]">Kelola Tagihan</h1>
-            <p className="mt-2 text-sm text-slate-500">Riwayat tagihan SPP dan status pembayaran</p>
+            <p className="mt-2 text-sm text-slate-500">Riwayat tagihan Biaya dan status pembayaran</p>
           </div>
         </header>
 

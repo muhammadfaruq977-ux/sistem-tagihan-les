@@ -5,7 +5,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: "Sistem Tagihan Les",
-  description: "Sistem pembayaran SPP QRIS",
+  description: "Sistem pembayaran Biaya QRIS",
 };
 
 export default function RootLayout({

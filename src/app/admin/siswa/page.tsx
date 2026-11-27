@@ -14,8 +14,8 @@ const Ikon = ({ children, className = 'h-6 w-6' }: { children: React.ReactNode; 
 
 const IkonLogo = () => (
   <Image
-    src="/logo-sekolah.png"
-    alt="Logo Sekolah"
+    src="/logo-Les.png"
+    alt="Logo Les"
     width={96}
     height={96}
     className="w-24 h-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]"
@@ -69,7 +69,7 @@ async function DaftarSiswa({ search, sort, les }: { search: string, sort: string
             <th className="pb-4 pl-2">ID Siswa</th>
             <th className="pb-4">Nama Lengkap</th>
             <th className="pb-4">No. WhatsApp</th>
-            <th className="pb-4">Besaran SPP</th>
+            <th className="pb-4">Besaran Biaya</th>
             <th className="pb-4">Jenis Les</th>
             <th className="pb-4 text-center">Aksi</th>
           </tr>
@@ -85,7 +85,7 @@ async function DaftarSiswa({ search, sort, les }: { search: string, sort: string
                   <td className="py-4 pl-2 font-mono text-sm text-slate-500 font-bold">{idUnik}</td>
                   <td className="py-4 font-bold text-[#0b1230]">{siswa.nama}</td>
                   <td className="py-4 font-bold text-slate-600">{siswa.nomor_wa || '-'}</td>
-                  <td className="py-4 font-black text-blue-600">{formatRupiah(siswa.besaran_spp)}</td>
+                  <td className="py-4 font-black text-blue-600">{formatRupiah(siswa.besaran_biaya)}</td>
                   <td className="py-4 font-bold text-slate-600">
                     <span className="px-3 py-1 text-xs bg-blue-50 text-blue-600 rounded-lg border border-blue-100">
                       {siswa.les_diikuti || '-'}

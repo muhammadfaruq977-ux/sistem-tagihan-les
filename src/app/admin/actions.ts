@@ -12,15 +12,15 @@ export async function tambahSiswa(formData: FormData) {
   const nama = formData.get('nama') as string;
   const nomor_wa = formData.get('nomor_wa') as string;
   
-  const besaranString = formData.get('besaran_spp') as string;
-  const besaran_spp = besaranString ? parseInt(besaranString, 10) : 0;
+  const besaranString = formData.get('besaran_biaya') as string;
+  const besaran_biaya = besaranString ? parseInt(besaranString, 10) : 0;
   const les_diikuti = formData.get('les_diikuti') as string;
 
   if (!id || !nama) return;
 
   try {
     await prisma.siswa.create({
-      data: { id, nama, nomor_wa, besaran_spp, les_diikuti } as any
+      data: { id, nama, nomor_wa, besaran_biaya, les_diikuti } as any
     });
   } catch (error) {
     console.error("Gagal menambah siswa:", error);
@@ -63,7 +63,7 @@ export async function bayarCash(formData: FormData) {
     if (tagihanUpdate.siswa.nomor_wa) {
       const formatRupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(tagihanUpdate.nominal);
       
-      const pesanWhatsApp = `✅ *PEMBAYARAN BERHASIL (CASH)*\n\nTerima kasih Bapak/Ibu wali dari *${tagihanUpdate.siswa.nama}*.\n\nPembayaran tagihan SPP periode *${tagihanUpdate.bulan_tahun}* sebesar *${formatRupiah}* telah kami terima.\n\nStatus tagihan saat ini: *LUNAS*.\n\nTerima kasih atas kerja samanya.`;
+      const pesanWhatsApp = `✅ *PEMBAYARAN BERHASIL (CASH)*\n\nTerima kasih Bapak/Ibu wali dari *${tagihanUpdate.siswa.nama}*.\n\nPembayaran tagihan Biaya periode *${tagihanUpdate.bulan_tahun}* sebesar *${formatRupiah}* telah kami terima.\n\nStatus tagihan saat ini: *LUNAS*.\n\nTerima kasih atas kerja samanya.`;
 
       await fetch('https://api.fonnte.com/send', {
         method: 'POST',
@@ -105,7 +105,7 @@ export async function tambahSiswaMassal(formData: FormData) {
       id: String(row['ID Siswa'] || '').trim(),
       nama: String(row['Nama Lengkap'] || '').trim(),
       nomor_wa: String(row['Nomor WhatsApp'] || '').trim(),
-      besaran_spp: parseInt(String(row['Besaran SPP'] || '0'), 10),
+      besaran_biaya: parseInt(String(row['Besaran Biaya'] || '0'), 10),
       les_diikuti: String(row['Jenis Les'] || 'Paket 1 Kelas').trim(),
       status_aktif: true,
     })).filter(s => s.id && s.nama);
@@ -131,7 +131,7 @@ export async function updateSiswa(formData: FormData) {
   const id = formData.get('id') as string;
   const nama = formData.get('nama') as string;
   const nomor_wa = formData.get('nomor_wa') as string;
-  const besaran_spp = Number(formData.get('besaran_spp'));
+  const besaran_biaya = Number(formData.get('besaran_biaya'));
   const les_diikuti = formData.get('les_diikuti') as string;
 
   if (!id || !nama) return;
@@ -142,7 +142,7 @@ export async function updateSiswa(formData: FormData) {
       data: {
         nama,
         nomor_wa,
-        besaran_spp,
+        besaran_biaya,
         les_diikuti,
       }
     });

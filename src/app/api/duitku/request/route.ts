@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       paymentAmount: paymentAmount,
       paymentMethod: "SP", // Spesifik QRIS
       merchantOrderId: id_tagihan,
-      productDetails: `SPP Bulan ${tagihan.bulan_tahun}`,
+      productDetails: `Biaya Bulan ${tagihan.bulan_tahun}`,
       email: "admin@kelastambahanintegral.web.id", 
       phoneNumber: tagihan.siswa.nomor_wa,
       customerVaName: tagihan.siswa.nama,

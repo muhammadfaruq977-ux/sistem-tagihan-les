@@ -49,8 +49,8 @@ async function FormEditSiswa({ paramsPromise }: { paramsPromise: Promise<{ id: s
       </div>
 
       <div>
-        <label className="block text-xs font-bold tracking-widest text-slate-400 uppercase mb-2 ml-1">Besaran SPP (Rp)</label>
-        <input type="number" name="besaran_spp" required defaultValue={siswa.besaran_spp} min="0" className={`w-full px-5 py-4 rounded-2xl outline-none font-bold text-slate-700 bg-transparent placeholder:text-slate-400 ${cekung}`} />
+        <label className="block text-xs font-bold tracking-widest text-slate-400 uppercase mb-2 ml-1">Besaran Biaya (Rp)</label>
+        <input type="number" name="besaran_biaya" required defaultValue={siswa.besaran_biaya} min="0" className={`w-full px-5 py-4 rounded-2xl outline-none font-bold text-slate-700 bg-transparent placeholder:text-slate-400 ${cekung}`} />
       </div>
 
       <div>

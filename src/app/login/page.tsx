@@ -9,8 +9,8 @@ import Image from 'next/image';
 
 const IkonLogo = () => (
   <Image
-    src="/logo-sekolah.png"
-    alt="Logo Sekolah"
+    src="/logo-Les.png"
+    alt="Logo Les"
     width={96}
     height={96}
     className="h-auto w-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]"

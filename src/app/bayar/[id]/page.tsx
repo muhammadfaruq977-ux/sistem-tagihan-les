@@ -4,19 +4,27 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { connection } from 'next/server';
 
-const prisma = new PrismaClient();
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const prisma = globalForPrisma.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-// 1. Terima params sebagai Promise di dalam komponen yang dilindungi Suspense
-async function DetailTagihan({ paramsPromise }: { paramsPromise: Promise<{ id: string }> }) {
+async function DetailTagihan({
+  paramsPromise,
+  searchParamsPromise,
+}: {
+  paramsPromise: Promise<{ id: string }>;
+  searchParamsPromise: Promise<{ status?: string }>;
+}) {
   await connection();
 
-  // Lakukan await param di sini, BUKAN di komponen Page utama
   const resolvedParams = await paramsPromise;
+  const resolvedSearchParams = await searchParamsPromise;
   const id = resolvedParams.id;
+  const statusBayar = resolvedSearchParams?.status;
 
   const tagihan = await prisma.tagihan.findUnique({
     where: { id_tagihan: id },
-    include: { siswa: true }
+    include: { siswa: true },
   });
 
   if (!tagihan) {
@@ -24,29 +32,46 @@ async function DetailTagihan({ paramsPromise }: { paramsPromise: Promise<{ id: s
       <div className="p-10 rounded-[2rem] bg-[#e8f0f7] shadow-[15px_15px_30px_#c7d3e1,-15px_-15px_30px_#ffffff] text-center max-w-md w-full">
         <h1 className="text-2xl font-bold text-red-500 mb-2">Tidak Ditemukan</h1>
         <p className="text-slate-500 mb-8 font-medium">Pastikan ID Tagihan sudah benar.</p>
-        <Link href="/" className="py-4 block rounded-2xl bg-[#e8f0f7] shadow-[5px_5px_10px_#c7d3e1,-5px_-5px_10px_#ffffff] text-slate-600 font-bold">Kembali</Link>
+        <Link
+          href="/"
+          className="py-4 block rounded-2xl bg-[#e8f0f7] shadow-[5px_5px_10px_#c7d3e1,-5px_-5px_10px_#ffffff] text-slate-600 font-bold"
+        >
+          Kembali
+        </Link>
       </div>
     );
   }
 
-  // Kalkulasi SPP Murni + Biaya Admin QRIS 0,7% (dibulatkan ke atas)
-  const nominalSpp = tagihan.nominal;
-  const biayaAdmin = Math.ceil(nominalSpp * 0.007);
-  const totalBayar = nominalSpp + biayaAdmin;
+  // Kalkulasi Biaya Murni + Biaya Admin QRIS 0,7% (dibulatkan ke atas)
+  const nominalBiaya = tagihan.nominal;
+  const biayaAdmin = Math.ceil(nominalBiaya * 0.007);
+  const totalBayar = nominalBiaya + biayaAdmin;
 
   const formatIDR = (angka: number) =>
     new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
-      minimumFractionDigits: 0
+      minimumFractionDigits: 0,
     }).format(angka);
 
   return (
     <main className="max-w-md w-full p-8 sm:p-12 rounded-[2rem] bg-[#e8f0f7] shadow-[15px_15px_30px_#c7d3e1,-15px_-15px_30px_#ffffff] flex flex-col font-sans text-slate-700">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">Rincian SPP</h1>
+        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">Rincian Biaya</h1>
         <p className="text-slate-500 font-medium tracking-wide">Kelas Tambahan Integral</p>
       </div>
+
+      {statusBayar === 'batal' && tagihan.status !== 'PAID' && (
+        <div className="mb-6 p-3 rounded-xl bg-amber-100/80 text-amber-800 text-xs font-semibold text-center">
+          Pembayaran dibatalkan. Silakan klik tombol di bawah untuk mencoba kembali.
+        </div>
+      )}
+
+      {statusBayar === 'sukses' && tagihan.status !== 'PAID' && (
+        <div className="mb-6 p-3 rounded-xl bg-blue-100/80 text-blue-800 text-xs font-semibold text-center">
+          Pembayaran sedang diverifikasi otomatis. Silakan muat ulang halaman beberapa saat lagi.
+        </div>
+      )}
 
       <div className="p-6 rounded-2xl bg-[#e8f0f7] shadow-[inset_5px_5px_10px_#c7d3e1,inset_-5px_-5px_10px_#ffffff] mb-8 space-y-5">
         <div>
@@ -59,14 +84,14 @@ async function DetailTagihan({ paramsPromise }: { paramsPromise: Promise<{ id: s
         </div>
         <div>
           <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Keterangan</p>
-          <p className="text-slate-800 font-bold text-lg">SPP Bulan {tagihan.bulan_tahun}</p>
+          <p className="text-slate-800 font-bold text-lg">Biaya Bulan {tagihan.bulan_tahun}</p>
         </div>
 
         {/* Rincian Biaya */}
         <div className="pt-4 border-t border-slate-300/60 space-y-2 text-sm">
           <div className="flex justify-between items-center">
-            <span className="text-slate-500 font-medium">Tagihan SPP</span>
-            <span className="text-slate-800 font-bold">{formatIDR(nominalSpp)}</span>
+            <span className="text-slate-500 font-medium">Tagihan Biaya</span>
+            <span className="text-slate-800 font-bold">{formatIDR(nominalBiaya)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500 font-medium">Biaya Admin QRIS (0,7%)</span>
@@ -85,26 +110,38 @@ async function DetailTagihan({ paramsPromise }: { paramsPromise: Promise<{ id: s
           Tagihan Lunas
         </div>
       ) : (
-        <form action="/api/duitku/request" method="POST">
+        <form action="/api/ipaymu/request" method="POST">
           <input type="hidden" name="id_tagihan" value={tagihan.id_tagihan} />
-          <button type="submit" className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold text-lg tracking-wide shadow-[0_10px_20px_rgba(79,70,229,0.3)]">
+          <button
+            type="submit"
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold text-lg tracking-wide shadow-[0_10px_20px_rgba(79,70,229,0.3)] hover:opacity-95 transition-opacity cursor-pointer"
+          >
             Bayar via QRIS
           </button>
         </form>
       )}
 
-      <Link href="/" className="mt-8 text-center text-sm font-bold text-slate-400 hover:text-blue-600 transition-colors">Kembali ke Beranda</Link>
+      <Link
+        href="/"
+        className="mt-8 text-center text-sm font-bold text-slate-400 hover:text-blue-600 transition-colors"
+      >
+        Kembali ke Beranda
+      </Link>
     </main>
   );
 }
 
-// 2. Komponen utama sekarang menjadi sinkron (tanpa async/await di level teratas)
-export default function HalamanPembayaran({ params }: { params: Promise<{ id: string }> }) {
+export default function HalamanPembayaran({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ status?: string }>;
+}) {
   return (
     <div className="min-h-screen bg-[#e8f0f7] flex flex-col items-center justify-center p-4">
       <Suspense fallback={<div className="text-slate-500 font-bold">Memuat rincian tagihan...</div>}>
-        {/* Teruskan promise params utuh ke dalam komponen di bawah */}
-        <DetailTagihan paramsPromise={params} />
+        <DetailTagihan paramsPromise={params} searchParamsPromise={searchParams} />
       </Suspense>
     </div>
   );

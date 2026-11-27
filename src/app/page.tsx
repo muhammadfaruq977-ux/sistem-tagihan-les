@@ -78,7 +78,7 @@ export default function HalamanUtama() {
       <main className="relative z-[1] mx-auto flex min-h-screen w-full max-w-4xl flex-col items-center px-6 py-14">
         <section className="flex w-full max-w-sm flex-col items-center">
           <div className={`mb-8 flex h-40 w-40 items-center justify-center rounded-[2.5rem] backdrop-blur-xl ${t.panel}`}>
-            <Image src="/logo-sekolah.png" alt="Logo Sekolah" width={96} height={96} className="h-auto w-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]" priority />
+            <Image src="/logo-Les.png" alt="Logo Les" width={96} height={96} className="h-auto w-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]" priority />
           </div>
 
           <h1 className={`text-[2rem] font-extrabold tracking-tight ${t.judul}`}>Kelas Tambahan</h1>
@@ -130,9 +130,9 @@ export default function HalamanUtama() {
           </div>
         </section>
 
-        <section id="program-spp" className="mt-16 w-full">
+        <section id="program-Biaya" className="mt-16 w-full">
           <div className="mb-8 text-center">
-            <h2 className={`text-2xl font-extrabold ${t.judul}`}>Program Bimbingan & Biaya SPP</h2>
+            <h2 className={`text-2xl font-extrabold ${t.judul}`}>Program Bimbingan & Biaya</h2>
             <p className={`mt-1 text-sm ${t.sub}`}>Layanan pendidikan kelas tambahan dengan pembayaran bulanan</p>
           </div>
 
@@ -140,7 +140,7 @@ export default function HalamanUtama() {
             {PAKET_LES.map((p) => (
               <div key={p.nama} className={`flex flex-col justify-between rounded-[2rem] p-6 backdrop-blur-xl ${t.panel}`}>
                 <div>
-                  <span className="rounded-full bg-blue-500/15 px-3 py-1 text-xs font-bold text-blue-500">SPP Bulanan</span>
+                  <span className="rounded-full bg-blue-500/15 px-3 py-1 text-xs font-bold text-blue-500">Biaya Bulanan</span>
                   <h3 className={`mt-4 text-xl font-extrabold ${t.judul}`}>{p.nama}</h3>
                   <p className="mt-2 text-2xl font-black text-blue-600">
                     {p.harga} <span className={`text-xs font-semibold ${t.sub}`}>/ bulan</span>

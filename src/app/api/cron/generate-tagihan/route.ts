@@ -6,9 +6,9 @@ export async function GET(request: Request) {
   await connection();
 
   // 1. PENGAMANAN RUTE (SECURITY CHECK)
-  // Mencegah orang asing mengeksekusi URL ini
+  // Hanya aktif di production (Vercel), sehingga bisa dibuka langsung di browser saat localhost
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new NextResponse('Unauthorized: Invalid Cron Secret', { status: 401 });
   }
 
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
       const formatRupiah = new Intl.NumberFormat('id-ID', { 
         style: 'currency', currency: 'IDR', minimumFractionDigits: 0 
-      }).format(siswa.besaran_spp || 0);
+      }).format(siswa.besaran_biaya || 0);
 
       // Sanitasi Nomor WA
       let nomorWaValid = siswa.nomor_wa || '';
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
           data: {
             id_tagihan: idTagihanUnik,
             id_siswa: siswa.id,
-            nominal: siswa.besaran_spp,
+            nominal: siswa.besaran_biaya,
             bulan_tahun: periode,
             status: 'UNPAID'
           }
