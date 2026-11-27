@@ -7,9 +7,9 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 const PAKET_LES = [
-  { nama: 'Paket 1 Kelas', harga: 'Rp 50.000 / 100.000', desc: 'Bimbingan rutin untuk 1 pilihan kelas (Akademik, Tahfidz, atau Ekstra).' },
+  { nama: 'Paket 1 Kelas', harga: 'Rp 50.000 / 100.000', desc: 'Bimbingan rutin untuk 1 pilihan kelas.' },
   { nama: 'Paket 2 Kelas', harga: 'Rp 150.000 / 200.000', desc: 'Bimbingan gabungan untuk 2 pilihan kelas sekaligus dalam satu tagihan.' },
-  { nama: 'Paket 3 Kelas', harga: 'Rp 250.000', desc: 'Bimbingan lengkap untuk 3 pilihan kelas sekaligus (Akademik, Tahfidz, Ekstra).' },
+  { nama: 'Paket 3 Kelas', harga: 'Rp 250.000', desc: 'Bimbingan lengkap untuk 3 pilihan kelas sekaligus dalam satu tagihan.' },
 ];
 
 export default function HalamanUtama() {
@@ -81,7 +81,7 @@ export default function HalamanUtama() {
             <Image src="/logo-Les.png" alt="Logo Les" width={96} height={96} className="h-auto w-auto object-contain drop-shadow-[0_10px_14px_rgba(37,99,235,0.35)]" priority />
           </div>
 
-          <h1 className={`text-[2rem] font-extrabold tracking-tight ${t.judul}`}>Kelas Tambahan</h1>
+          <h1 className={`text-[2rem] font-extrabold tracking-tight ${t.judul}`}>Les Kelas Tambahan</h1>
           <p className={`mb-9 mt-2 text-center text-sm leading-relaxed ${t.sub}`}>
             Masukkan ID Tagihan untuk melihat rincian dan membayar via QRIS
           </p>
@@ -160,16 +160,16 @@ export default function HalamanUtama() {
         </section>
 
         <footer id="kontak-support" className={`mt-14 w-full rounded-[2rem] p-6 sm:p-8 backdrop-blur-xl ${t.panel}`}>
-          <h2 className={`text-lg font-extrabold ${t.judul}`}>Kontak Support & Informasi Usaha</h2>
-          <p className={`mt-1 mb-5 text-xs ${t.sub}`}>Kelas Tambahan Integral — Layanan Administrasi & Bantuan Wali Murid</p>
+          <h2 className={`text-lg font-extrabold ${t.judul}`}>Kontak Support & Informasi</h2>
+          <p className={`mt-1 mb-5 text-xs ${t.sub}`}>Kelas Tambahan — Layanan Administrasi & Bantuan</p>
           <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
             <div>
               <p className={`text-xs font-bold uppercase ${t.sub}`}>Email Support</p>
-              <p className={`mt-1 font-semibold break-all ${t.judul}`}>am073178@gmail.com</p>
+              <p className={`mt-1 font-semibold break-all ${t.judul}`}>leskelastambahan@gmail.com</p>
             </div>
             <div>
               <p className={`text-xs font-bold uppercase ${t.sub}`}>Telepon / WhatsApp</p>
-              <p className={`mt-1 font-semibold ${t.judul}`}>0878-2449-5664 (Ust. Tomi)</p>
+              <p className={`mt-1 font-semibold ${t.judul}`}>0878-2449-5664 (Ahmad Tomi Ikbal)</p>
             </div>
             <div>
               <p className={`text-xs font-bold uppercase ${t.sub}`}>Alamat Usaha</p>
